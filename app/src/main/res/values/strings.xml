@@ -1,7 +1,22 @@
 <resources>
-    <string name="app_name">飞飞鱼</string>
-    <string name="accessibility_service_description">我会帮你跳过开屏广告哟</string>
+    <string name="app_name">flyfish</string>
+    <string name="accessibility_service_description">"I'll help you skip the first screen AD"</string>
     <string name="title_activity_service_settings">ServiceSettingsActivity</string>
-    <string name="enable_accessibility_service">开启辅助功能</string>
-    <string name="enabled_accessibility_service">已开启</string>
+    <string name="enable_accessibility_service">Click me</string>
+    <string name="enabled_accessibility_service">Enabled</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="privacy_policy_content"><![CDATA[
+    Please read carefully and fully understand the terms of the "Privacy Policy", including but not limited to:\n
+        In order to be able to provide services to you, we need to use accessibility features. \n
+        Use Accessibility to get:\n
+          1. Open/close applications, page switching and other actions. \n
+          2. Read the text of the application page. \n
+        Use Accessibility to do:\n
+          1. Perform a click action. \n\n
+    Disclaimer: All consequences of using this app to perform operations on behalf of the user are the responsibility of the user. \n
+    ]]></string>
+    <string name="agree_button">Agree</string>
+    <string name="disagree_button">Disagree</string>
+    <string name="enable_accessibility_guide">Click %s in \"Downloaded apps\" and enable it.</string>
+    <string name="no_options_available">No Options Available</string>
 </resources>

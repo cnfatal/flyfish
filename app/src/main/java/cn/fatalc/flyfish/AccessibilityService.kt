@@ -13,7 +13,7 @@ import android.widget.Toast
 import java.time.LocalTime
 
 class AccessibilityService : AccessibilityService() {
-    private val keywords = setOf("跳过")
+    private val keywords = setOf("跳过", "skip")
     private val ignoredPackages = setOf("com.android.systemui")
     private lateinit var toast: Toast
     private var lastWindowChange: LocalTime = LocalTime.now()
@@ -29,8 +29,7 @@ class AccessibilityService : AccessibilityService() {
                         AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
         }
         this.serviceInfo = info
-        this.toast = Toast.makeText(this, "\uD83D\uDC4C", Toast.LENGTH_SHORT).apply {
-        }
+        this.toast = Toast.makeText(this, "\uD83D\uDC4C", Toast.LENGTH_SHORT)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -79,32 +78,6 @@ class AccessibilityService : AccessibilityService() {
                 }?.let {
                     service.dispatchGesture(it, null, null)
                 } ?: false
-        }
-    }
-
-    private fun foreachParentRecursive(
-        nodeInfo: AccessibilityNodeInfo,
-        fn: ((item: AccessibilityNodeInfo) -> Boolean)
-    ) {
-        if (fn(nodeInfo)) {
-            return
-        }
-        nodeInfo.parent?.apply {
-            foreachParentRecursive(this, fn)
-        }
-    }
-
-    private fun foreachRecursive(
-        nodeInfo: AccessibilityNodeInfo,
-        fn: ((item: AccessibilityNodeInfo) -> Boolean)
-    ) {
-        if (fn(nodeInfo)) {
-            return
-        }
-        for (i in 0 until nodeInfo.childCount) {
-            nodeInfo.getChild(i)?.apply {
-                foreachRecursive(this, fn)
-            }
         }
     }
 

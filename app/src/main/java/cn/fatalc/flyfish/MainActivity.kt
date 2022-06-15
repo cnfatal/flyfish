@@ -81,42 +81,16 @@ fun MainContent() {
             else -> Unit
         }
     }
-
     var openDialog by remember { mutableStateOf(false) }
-    if (openDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                openDialog = false
-            },
-            title = {
-                Text(text = "开启辅助功能")
-            },
-            text = {
-                Text(
-                    text = "点击 \"已下载的应用\"/\"已安装服务\" -> \"%s\" ,选择开启"
-                        .format(
-                            context.applicationInfo.loadLabel(context.packageManager).toString()
-                        )
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        openDialog = false
-                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                        startActivity(context, intent, null)
-                    }
-                ) {
-                    Text("知道了")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { }) {
-                    Text("不要")
-                }
-            }
-        )
-    }
+    PrivacyPolicyDialog(
+        show = openDialog,
+        onDisagree = { openDialog = false },
+        onAgree = {
+            openDialog = false
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            startActivity(context, intent, null)
+        }
+    )
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -129,9 +103,7 @@ fun MainContent() {
                 modifier = Modifier
                     .width(200.dp)
                     .height(200.dp),
-                onClick = {
-                    openDialog = true
-                }
+                onClick = { openDialog = true }
             ) {
                 Text(
                     text = stringResource(R.string.enable_accessibility_service),
@@ -155,6 +127,44 @@ fun MainContent() {
         }
     }
 }
+
+@Composable
+fun PrivacyPolicyDialog(
+    show: Boolean = false,
+    onAgree: () -> Unit,
+    onDisagree: () -> Unit,
+) {
+    val context = LocalContext.current
+    if (show) {
+        AlertDialog(
+            title = {
+                Text(text = stringResource(id = R.string.privacy_policy))
+            },
+            text = {
+                Column {
+                    Text(text = stringResource(id = R.string.privacy_policy_content))
+                    Spacer(modifier = Modifier.padding(top = 20.dp))
+                    Text(
+                        text = stringResource(id = R.string.enable_accessibility_guide)
+                            .format(context.applicationInfo.loadLabel(context.packageManager))
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { onAgree() }) {
+                    Text(stringResource(id = R.string.agree_button))
+                }
+            },
+            onDismissRequest = { onDisagree() },
+            dismissButton = {
+                TextButton(onClick = { onDisagree() }) {
+                    Text(stringResource(id = R.string.disagree_button))
+                }
+            }
+        )
+    }
+}
+
 
 @Composable
 fun OnLifecycleEvent(onEvent: (owner: LifecycleOwner, event: Lifecycle.Event) -> Unit) {

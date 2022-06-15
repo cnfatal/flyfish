@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">飞飞鱼</string>
+    <string name="accessibility_service_description">我会帮你跳过开屏广告哟</string>
+    <string name="title_activity_service_settings">辅助功能设置</string>
+    <string name="enabled_accessibility_service">已开启</string>
+    <string name="enable_accessibility_service">开启辅助功能</string>
+    <string name="privacy_policy">隐私政策</string>
+    <string name="privacy_policy_content"><![CDATA[
+    请你务必审慎阅读、充分理解“隐私政策”各条款，包括但不限于：\n
+        为了能够的向你提供服务，我们需要使用辅助功能。\n
+        使用辅助功能来获取：\n
+          1. 打开/关闭应用、页面切换等动作。\n
+          2. 读取应用页面文字。\n
+        使用辅助功能来执行：\n
+          1. 执行点击操作。\n
+          \n
+    免责声明：对于使用本应用代替用户执行操作所产生的一切后果均由用户承担。\n
+    ]]></string>
+    <string name="agree_button">同意并继续</string>
+    <string name="disagree_button">不同意</string>
+    <string name="enable_accessibility_guide">点击 已下载的应用 -> %s ,选择开启</string>
+    <string name="no_options_available">没有可以配置的选项</string>
+</resources>
