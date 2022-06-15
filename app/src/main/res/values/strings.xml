@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">飞飞鱼</string>
+    <string name="accessibility_service_description">我会帮你跳过开屏广告哟</string>
+    <string name="title_activity_service_settings">ServiceSettingsActivity</string>
+    <string name="enable_accessibility_service">开启辅助功能</string>
+    <string name="enabled_accessibility_service">已开启</string>
+</resources>
