@@ -18,5 +18,7 @@
     <string name="agree_button">Agree</string>
     <string name="disagree_button">Disagree</string>
     <string name="enable_accessibility_guide">Click %s in \"Downloaded apps\" and enable it.</string>
-    <string name="no_options_available">No Options Available</string>
+    <string name="setting_find_keywords">find keywords</string>
+    <string name="setting_max_perform">Max Perform Count</string>
+    <string name="setting_ignore_after">Ignore Event After</string>
 </resources>

@@ -10,19 +10,30 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import java.time.LocalTime
 
 class AccessibilityService : AccessibilityService() {
-    private val keywords = setOf("跳过", "skip")
-    private val ignoredPackages = setOf("com.android.systemui")
+    private var preferences: UserPreferences = UserPreferences()
     private lateinit var toast: Toast
-    private var lastWindowChange: LocalTime = LocalTime.now()
+    private var currentPackage = CurrentPackage("")
     private var info = AccessibilityServiceInfo()
 
     override fun onServiceConnected() {
+        val scope = CoroutineScope(Job() + Dispatchers.IO)
+        scope.launch {
+            UserPreferencesRepository(dataStore).mutablePreferencesFlow.collect {
+                preferences = it.toUserPreferences()
+                Log.d("updated", "current setting %s".format(preferences))
+            }
+        }
+
         info.apply {
-            flags = AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
-                    AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+            flags = AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
             eventTypes =
                 AccessibilityEvent.TYPE_WINDOWS_CHANGED or
                         AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
@@ -33,37 +44,56 @@ class AccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        event.takeIf {
-            event.isEnabled
-                    && event.packageName.isNotBlank()
-                    && event.className.isNotBlank()
-                    && it.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
-                    && !ignoredPackages.contains(event.packageName)
-        }?.apply {
-            Log.v(
-                "launched", "name %s package %s activity %s "
-                    .format(text, packageName, className)
-            )
-            resetTimeout()
+        if (event.packageName.isNullOrEmpty()
+            || event.className.isNullOrEmpty()
+            || preferences.ignorePackages.contains(event.packageName)
+            || event.packageName == packageName
+        ) {
+            return
         }
-        event.takeIf { isInTimeout() }?.apply { source?.performSkipIfNeeded() }
+
+        event
+            .also {
+                it.takeIf {
+                    it.canPerformAction()
+                }?.apply {
+                    source?.performSkipIfNeeded()
+                }
+            }.also {
+                it.takeIf {
+                    it.isNewLaunch()
+                }?.apply {
+                    resetCurrent(event)
+                }
+            }
     }
 
     private fun AccessibilityNodeInfo.performSkipIfNeeded() {
-        keywords.forEach {
+        preferences.keyword.forEach {
             findAccessibilityNodeInfosByText(it).forEach { info1 ->
-                Log.d("found ad like", (info1.text ?: "").toString())
-                info1.performClick(this@AccessibilityService)
-                    .takeIf { true }
-                    ?.apply {
-                        toast.show()
-                    }
+                info1?.also {
+                    Log.d(
+                        "found ad like",
+                        "package: %s text: %s content description: %s".format(
+                            info1.packageName,
+                            info1.text,
+                            info1.contentDescription
+                        )
+                    )
+                }?.performClick(
+                    this@AccessibilityService
+                ).takeIf {
+                    true
+                }?.apply {
+                    toast.show()
+                    Log.d("perform", "clicked %s".format(info1))
+                    this@AccessibilityService.currentPackage.countInc()
+                }
             }
         }
     }
 
     private fun AccessibilityNodeInfo.performClick(service: AccessibilityService): Boolean {
-        Log.d("perform", "clicked %s".format(this))
         return when (isClickable) {
             true -> {
                 performAction(AccessibilityNodeInfo.ACTION_CLICK)
@@ -71,6 +101,7 @@ class AccessibilityService : AccessibilityService() {
             false -> Rect()
                 .apply {
                     this@performClick.getBoundsInScreen(this)
+                    Log.v("gesture", "use gesture on %s".format(this))
                 }.let {
                     Path().apply { moveTo(it.exactCenterX(), it.exactCenterY()) }
                 }.let {
@@ -81,15 +112,35 @@ class AccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun isInTimeout(): Boolean {
-        return lastWindowChange.plusSeconds(5).isAfter(LocalTime.now())
+    private fun AccessibilityEvent.canPerformAction(): Boolean {
+        return packageName == currentPackage.packageName
+                && currentPackage.performCount < preferences.maxPerformActions
+                && currentPackage.startAt.plusSeconds(preferences.ignoreAfterSeconds)
+            .isAfter(LocalTime.now())
     }
 
-    private fun resetTimeout() {
-        lastWindowChange = LocalTime.now()
+    private fun AccessibilityEvent.isNewLaunch(): Boolean {
+        return (eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED
+                || eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)
+                && isEnabled
+                && packageName.isNotBlank() && className.isNotBlank()
+                && currentPackage.packageName != packageName
+    }
+
+    private fun resetCurrent(event: AccessibilityEvent) {
+        Log.v("current", "package %s".format(event.packageName))
+        currentPackage = CurrentPackage(event.packageName.toString())
     }
 
     override fun onInterrupt() {
-        Log.d("Event", "interrupt")
+        Log.d("interrupt", "on interrupt")
+    }
+
+    data class CurrentPackage(val packageName: String, var performCount: Int = 0) {
+        val startAt: LocalTime = LocalTime.now()
+
+        fun countInc() {
+            performCount = performCount.inc()
+        }
     }
 }

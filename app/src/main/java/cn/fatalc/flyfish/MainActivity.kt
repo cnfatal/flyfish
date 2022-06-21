@@ -6,6 +6,10 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -20,7 +24,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat.startActivity
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -28,6 +31,9 @@ import androidx.lifecycle.LifecycleOwner
 import cn.fatalc.flyfish.ui.theme.FlyFishTheme
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.statusBarsPadding
+import com.google.accompanist.navigation.animation.AnimatedNavHost
+import com.google.accompanist.navigation.animation.composable
+import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlin.reflect.KClass
 
@@ -37,7 +43,7 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             Theme {
-                MainContent()
+                NavigationContent()
             }
         }
     }
@@ -66,6 +72,29 @@ fun Theme(content: @Composable () -> Unit) {
     }
 }
 
+object NavigationItem {
+    const val Main = "main"
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun NavigationContent() {
+    AnimatedVisibility(
+        visible = true
+    ) {
+        val navController = rememberAnimatedNavController()
+        AnimatedNavHost(
+            navController = navController,
+            startDestination = NavigationItem.Main,
+            exitTransition = { ExitTransition.None },
+            enterTransition = { EnterTransition.None }
+        ) {
+            composable(NavigationItem.Main) {
+                MainContent()
+            }
+        }
+    }
+}
 
 @Composable
 fun MainContent() {
@@ -81,16 +110,25 @@ fun MainContent() {
             else -> Unit
         }
     }
-    var openDialog by remember { mutableStateOf(false) }
+
+    val openDialog = remember { mutableStateOf(false) }
     PrivacyPolicyDialog(
-        show = openDialog,
-        onDisagree = { openDialog = false },
+        showState = openDialog,
         onAgree = {
-            openDialog = false
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-            startActivity(context, intent, null)
+            context.startActivity(
+                Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            )
         }
-    )
+    ) {
+        Column {
+            Text(text = stringResource(id = R.string.privacy_policy_content))
+            Spacer(modifier = Modifier.padding(top = 20.dp))
+            Text(
+                text = stringResource(id = R.string.enable_accessibility_guide)
+                    .format(context.applicationInfo.loadLabel(context.packageManager))
+            )
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -103,7 +141,7 @@ fun MainContent() {
                 modifier = Modifier
                     .width(200.dp)
                     .height(200.dp),
-                onClick = { openDialog = true }
+                onClick = { openDialog.value = true }
             ) {
                 Text(
                     text = stringResource(R.string.enable_accessibility_service),
@@ -116,7 +154,11 @@ fun MainContent() {
                     .width(200.dp)
                     .height(200.dp),
                 colors = ButtonDefaults.buttonColors(),
-                onClick = {}
+                onClick = {
+                    context.startActivity(
+                        Intent(context, ServiceSettingsActivity::class.java),
+                    )
+                }
             ) {
                 Icon(
                     modifier = Modifier.size(50.dp),
@@ -130,34 +172,35 @@ fun MainContent() {
 
 @Composable
 fun PrivacyPolicyDialog(
-    show: Boolean = false,
-    onAgree: () -> Unit,
-    onDisagree: () -> Unit,
+    showState: MutableState<Boolean> = mutableStateOf(false),
+    onAgree: () -> Unit = {},
+    onDisagree: () -> Unit = {},
+    content: @Composable () -> Unit
 ) {
-    val context = LocalContext.current
-    if (show) {
+    var showby by showState
+    val onDismissRequest = {
+        showby = false
+        onDisagree()
+    }
+    if (showby) {
         AlertDialog(
             title = {
                 Text(text = stringResource(id = R.string.privacy_policy))
             },
             text = {
-                Column {
-                    Text(text = stringResource(id = R.string.privacy_policy_content))
-                    Spacer(modifier = Modifier.padding(top = 20.dp))
-                    Text(
-                        text = stringResource(id = R.string.enable_accessibility_guide)
-                            .format(context.applicationInfo.loadLabel(context.packageManager))
-                    )
-                }
+                content()
             },
             confirmButton = {
-                TextButton(onClick = { onAgree() }) {
+                TextButton(onClick = {
+                    onAgree()
+                    showby = false
+                }) {
                     Text(stringResource(id = R.string.agree_button))
                 }
             },
-            onDismissRequest = { onDisagree() },
+            onDismissRequest = onDismissRequest,
             dismissButton = {
-                TextButton(onClick = { onDisagree() }) {
+                TextButton(onClick = onDismissRequest) {
                     Text(stringResource(id = R.string.disagree_button))
                 }
             }

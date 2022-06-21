@@ -20,5 +20,7 @@
     <string name="agree_button">同意并继续</string>
     <string name="disagree_button">不同意</string>
     <string name="enable_accessibility_guide">点击 已下载的应用 -> %s ,选择开启</string>
-    <string name="no_options_available">没有可以配置的选项</string>
+    <string name="setting_find_keywords">查找关键字</string>
+    <string name="setting_max_perform">最大点击次数</string>
+    <string name="setting_ignore_after">有效时间</string>
 </resources>

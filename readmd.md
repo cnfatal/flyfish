@@ -2,9 +2,9 @@
 
 一个自动帮你跳过开屏广告的极简程序，拒绝花里胡哨，无需root。
 
-## 截图
-
 ## 安装
+
+可以在 Google Play 中下载安装 [飞飞鱼](https://play.google.com/store/apps/details?id=cn.fatalc.flyfish)
 
 ## 使用
 
