@@ -4,11 +4,14 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.accessibilityservice.GestureDescription
 import android.accessibilityservice.GestureDescription.StrokeDescription
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Path
 import android.graphics.Rect
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +30,9 @@ class AccessibilityService : AccessibilityService() {
         val scope = CoroutineScope(Job() + Dispatchers.IO)
         scope.launch {
             UserPreferencesRepository(dataStore).mutablePreferencesFlow.collect {
-                preferences = it.toUserPreferences()
+                preferences = it.toUserPreferences().apply {
+                    ignorePackages += presetPackages()
+                }
                 Log.d("updated", "current setting %s".format(preferences))
             }
         }
@@ -41,6 +46,30 @@ class AccessibilityService : AccessibilityService() {
         }
         this.serviceInfo = info
         this.toast = Toast.makeText(this, "\uD83D\uDC4C", Toast.LENGTH_SHORT)
+    }
+
+    private fun presetPackages(): Set<String> {
+        val result = setOf(
+            Intent.CATEGORY_HOME,
+            Intent.CATEGORY_LAUNCHER
+        ).flatMap { it ->
+            packageManager.queryIntentActivities(
+                Intent(Intent.ACTION_MAIN).addCategory(it),
+                PackageManager.MATCH_ALL
+            ).map {
+                it.activityInfo.packageName
+            }
+        }.toHashSet()
+
+        getSystemService(InputMethodManager::class.java)
+            .inputMethodList
+            .map {
+                it.packageName
+            }.also {
+                result.addAll(it)
+            }
+        Log.d("preset ignore packaged", result.toString())
+        return result
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
